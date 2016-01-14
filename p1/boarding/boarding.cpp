@@ -107,13 +107,16 @@ int main(int argc, char** argv)
 
       switch(curRow.state) {
         case EMPTY:
-              prevRow = RowList.getFront();
+              if(curRow.rowID == 1)     // if row 1 empty, board next passenger in queue
+                  curRow.next = PBoarding.dequeue();
+              else                      // for all other rows get from the previous row
+                prevRow = RowList.getFront();
               curRow.state = NEW;
               break;
         case NEW:
               if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
                 curRow.state = STOR_1;
-              else 
+              else                                       // else we know next time to get a new passenger
                 curRow.state = EMPTY;
               break;
         case STOR_1:
@@ -124,9 +127,16 @@ int main(int argc, char** argv)
               break;
         case WAITING:
               if(curRow.next.letter == ('A' | 'B' | 'C')) {    // check for existing
-                if(curRow.ABC.isEmpty()) {       // if ABC empty, just fill it
+                if(curRow.ABC.isEmpty()) {                      // if ABC empty, just fill it
                   curRow.ABC.push(curRow.next.letter);
-
+                } else {                                        // if ABC not empty, iterate.
+                    while(!ABC.isEmpty()) {
+                      if(curRow.ABC.top() < curRow.next.letter) { // if the passenger can just sit down
+                        curRow.ABC.push(curRow.next.letter);
+                        break;
+                      }
+                      
+                    }
                 }
 
               }
