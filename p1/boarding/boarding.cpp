@@ -5,19 +5,47 @@
 
 using namespace std;
 
-class Row {
-  StackAr<bool> ABC;
-  StackAr<bool> DEF;
+
+
+enum AisleState { EMPTY, NEW, STOR_1, STOR_2, WAITING};
+/*  Definition of states:
+ *
+ *  EMPTY: Row is completely empty
+ *  NEW: new passenger in row, needs to store luggage
+ *  STOR_1: First of two stages to store luggage
+ *  STOR_2: Second of two stages to store luggage
+ *  WAITING_TO_MOVE: Passenger waiting for up to 2 other passengers to move out of their seats
+ *
+ *
+*/
+
+class Passenger {
+  public:
+    int number;
+    char letter;
 };
 
-void parsePassengers(ifstream *fileInput, Queue<int> *PBoardingNumber, Queue<char> *PBoardingLetter) {
+class Row {
+  public:
+    int rowID;
+    StackAr<char> ABC;
+    StackAr<char> DEF;
+    StackAr<Passenger> out;
+    Passenger next;
+    AisleState state;
+    
+};
+
+void parsePassengers(ifstream *fileInput, Queue<Passenger> *PBoarding) {
+  Passenger temp;
   char buf;
+  int row;
   while (1) {
     buf = fileInput->get();
 
     if(buf == '\n') break;  // end when done with the line
 
-    int row = buf  - '0';   // first char is an row number
+    row = buf  - '0';   // first char is an row number
 
     buf = fileInput->get();
     if(buf < 'A') {              // if the next char is a number
@@ -25,21 +53,22 @@ void parsePassengers(ifstream *fileInput, Queue<int> *PBoardingNumber, Queue<cha
       buf = fileInput->get();    // the next char is a letter
     }
     
-    PBoardingNumber->enqueue(row);
-    PBoardingLetter->enqueue(buf);
+    temp.number = row;
+    temp.letter = buf;
+
+    PBoarding->enqueue(temp);
 
     fileInput->get();              // remove trailing space
 
-//  cerr << row << buf << endl;
+    //  cerr << temp.number << temp.letter << endl;
   }
 }
 
 int main(int argc, char** argv)
 {
-  //char filename[256];
   int clock = 0;
-  Queue<int> PBoardingNumber(288);
-  Queue<char> PBoardingLetter(288);
+  Queue<Passenger> PBoarding(288);
+  Queue<Row> RowList(48);
 
   ifstream fileInput(argv[1]);
   if (!fileInput) {
@@ -47,7 +76,100 @@ int main(int argc, char** argv)
       return -1;
   }
 
-//  cerr << "Opening " << argv[1] << "..." << endl;
+
+// I. Initialization //
+  parsePassengers(&fileInput, &PBoarding);
+
+  Row curRow;
+  for(int i = 48; i > 0; i--) {
+    curRow.rowID = i;
+    curRow.state = EMPTY;
+    RowList.enqueue(curRow);
+  }
+
+   cerr << curRow.rowID << endl;
+// II. Put passengers where they belong. //
+//1. check row 48
+//6:07 PMFelix2. if not empty, do stuff
+//6:07 PMFelix3. use getFront() on rowList to get the information from row 47
+//6:07 PMFelix3a. check if they have a next Passenger
+//6:08 PMFelix3b. copy nextPassenger from row 47 to row 48
+//
+//
+
+
+  while(1){
+    Row prevRow;
+
+    for(int i = 48; i > 0; i--) {       // iterate back to front
+      curRow = RowList.dequeue();
+      Row prevRow;
+
+      switch(curRow.state) {
+        case EMPTY:
+              prevRow = RowList.getFront();
+              curRow.state = NEW;
+              break;
+        case NEW:
+              if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
+                curRow.state = STOR_1;
+              else 
+                curRow.state = EMPTY;
+              break;
+        case STOR_1:
+              curRow.state = STOR_2;
+              break;
+        case STOR_2:
+              curRow.state = WAITING;
+              break;
+        case WAITING:
+              if(curRow.next.letter == ('A' | 'B' | 'C')) {    // check for existing
+                if(curRow.ABC.isEmpty()) {       // if ABC empty, just fill it
+                  curRow.ABC.push(curRow.next.letter);
+
+                }
+
+              }
+
+              break;
+
+
+      } //switch
+
+
+/*
+          if(curRow.next.number == curRow.rowID){       // if waiting passenger belongs in this row, do stuff
+
+
+
+            // update states
+          } else {
+
+
+            prevRow = RowList.getFront();
+            if (prevRow.next.number != prevRow.rowID) {
+            curRow.next = prevRow.next.number;
+          }
+
+
+          }
+
+*/
+
+
+      RowList.enqueue(curRow);
+   }//for
+
+
+
+   clock += 5;
+   break;
+  } //while
+
+  return 0;
+}
+
+
 
 /*
   Row row1, row2, row3, row4, row5, row6, row7, row8, row9, row10,
@@ -56,23 +178,3 @@ int main(int argc, char** argv)
       row31, row32, row33, row34, row35, row36, row37, row38, row39, row40,
       row41, row42, row43, row44, row45, row46, row47, row48;
 */
-
-// I. Parse passenger queues. //
-  parsePassengers(&fileInput, &PBoardingNumber, &PBoardingLetter);
-
-// II. Put passengers where they belong. //
-  while(1){
-
-
-
-
-
-
-  }
-
-
-
-
-
-  return 0;
-}
