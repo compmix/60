@@ -3,19 +3,17 @@
 #include "StackAr.h"
 #include "QueueAr.h"
 
+#define SEATS 288
 using namespace std;
 
-
-
-enum AisleState { EMPTY, NEW, STOR_1, STOR_2, WAITING, FULL};
+enum AisleState { EMPTY, NEW, STOR_1, STOR_2, WAITING };
 /*  Definition of states:
  *
- *  EMPTY: Row is completely empty
- *  NEW: new passenger in row, needs to store luggage
+ *  EMPTY: aisle is clear
+ *  NEW: new passenger in aisle, needs to store luggage
  *  STOR_1: First of two stages to store luggage
- *  STOR_2: Second of two stages to store luggage
- *  WAITING_TO_MOVE: Passenger waiting for up to 2 other passengers to move out of their seats
- *
+ *  STOR_2: Second of two stages to store luggage, also sits
+ *  WAITING: Passenger waiting for up to 2 other passengers to move out of their seats
  *
 */
 
@@ -48,7 +46,7 @@ void parsePassengers(ifstream *fileInput, Queue<Passenger> *PBoarding) {
   while (1) {
     buf = fileInput->get();
 
-    if(buf == '\n') break;  // end when done with the line
+    if(buf == '\n' || fileInput->eof()) break;  // end when done with the line
 
     row = buf  - '0';   // first char is an row number
 
@@ -69,11 +67,29 @@ void parsePassengers(ifstream *fileInput, Queue<Passenger> *PBoarding) {
   }
 }
 
+void getNext(Row *curRow, Row *prevRow, Queue<Passenger> *PBoarding) {
+  if(curRow->rowID == 1) {    // if row 1 empty, board next passenger in queue
+      if (!PBoarding->isEmpty()) {       // if end of queue, don't get anything
+        curRow->next = PBoarding->dequeue();
+        curRow->state = NEW;
+      }
+
+  } else {                     // for all other rows get from the previous row
+    if (prevRow->next.number > prevRow->rowID) {
+      curRow->next = prevRow->next;
+      curRow->state = NEW;
+      prevRow->next.remove();
+      prevRow->state = EMPTY;
+    }
+  }
+}
+
 int main(int argc, char** argv)
 {
-  int clock = 0;
-  Queue<Passenger> PBoarding(288);
+  int clock, seated;
+  Queue<Passenger> PBoarding(SEATS);
   Queue<Row> RowList(48);
+  Row prevRow, curRow;
 
   ifstream fileInput(argv[1]);
   if (!fileInput) {
@@ -82,23 +98,21 @@ int main(int argc, char** argv)
   }
 
 
-// I. Initialization //
+  // I. Initialization //
   parsePassengers(&fileInput, &PBoarding);
+  clock = 0, seated = 0;
 
-  Row curRow;
   for(int i = 48; i > 0; i--) {
     curRow.rowID = i;
     curRow.state = EMPTY;
     RowList.enqueue(curRow);
   }
 
-// II. Put passengers where they belong. //
+  // II. Put passengers where they belong. //
+  prevRow = RowList.dequeue();
+  while(seated < SEATS){
 
-  Row prevRow = RowList.dequeue();
-  int seated = 0;
-  while(seated < 288){
-
-    cerr << "ROW state aisle --------------------------------------seated---" << seated << " time: " << clock/5 << endl;
+    cerr << "ROW state aisle --------------------------------------seated---" << seated << " time: " << clock << endl;
 
     for(int i = 48; i > 0; i--) {       // iterate back to front
       curRow = prevRow;
@@ -106,37 +120,27 @@ int main(int argc, char** argv)
 
       switch(curRow.state) {
         case EMPTY:
-        case FULL:
-              if(curRow.rowID == 1) {    // if row 1 empty, board next passenger in queue
-                  if (!PBoarding.isEmpty()) {       // if end of queue, don't get anything
-                    curRow.next = PBoarding.dequeue();
-                    curRow.state = NEW;
-                  }
-
-              } else {                     // for all other rows get from the previous row
-                if (prevRow.next.number > prevRow.rowID) {
-                  curRow.next = prevRow.next;
-                  curRow.state = NEW;
-                  prevRow.next.remove();
-                  prevRow.state = EMPTY;
-                }
-              }
-
+              getNext(&curRow, &prevRow, &PBoarding);
               break;
+
         case NEW:
               if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
                 curRow.state = STOR_1;
               break;
+
         case STOR_1:
               curRow.state = STOR_2;
               break;
+
         case STOR_2:
               if (curRow.next.letter <= 'C'){
                 if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
                   curRow.ABC.push(curRow.next.letter);                              // they can just sit down
-                  curRow.next.remove();
                   seated++;
+                  curRow.next.remove();
                   curRow.state = EMPTY;
+                  getNext(&curRow, &prevRow, &PBoarding);
+
                 }
                 else{ // otherwise we need to start making room for them
                   curRow.out.push(curRow.ABC.topAndPop());                    
@@ -148,10 +152,10 @@ int main(int argc, char** argv)
               else if (curRow.next.letter >= 'D'){
                 if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
                   curRow.DEF.push(curRow.next.letter);                              // they can just sit down
-                  curRow.next.remove();
                   seated++;
+                  curRow.next.remove();
                   curRow.state = EMPTY;
-
+                  getNext(&curRow, &prevRow, &PBoarding);
                 }
                 else{ // otherwise we need to start making room for them
                   curRow.out.push(curRow.DEF.topAndPop());                    
@@ -159,8 +163,8 @@ int main(int argc, char** argv)
                 }
               }
               break;
-        case WAITING:
 
+        case WAITING:
               if (curRow.next.letter <= 'C'){
                 if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){
                   curRow.ABC.push(curRow.next.letter);   //sit
@@ -185,7 +189,6 @@ int main(int argc, char** argv)
               }
 
               break;
-
       } //switch
 
       cerr << curRow.rowID << " " << curRow.state << " " << curRow.next.number << curRow.next.letter << endl;
@@ -193,14 +196,17 @@ int main(int argc, char** argv)
       RowList.enqueue(curRow);
    }//for
    clock += 5;
-
-
   } //while
-
-
   cerr << "Back to front: " << clock << endl;
+  
+  
+  // III. Delete everything. //
+  PBoarding.makeEmpty();
+  RowList.makeEmpty();
 
-  clock = 0;
+
+
+  
 
   return 0;
 }
