@@ -1,3 +1,10 @@
+/* File: boarding.cpp
+ * Authors: Felix Ng, Jacqueline Barcena
+ *  Simulates 3 sets of 288 passengers boarding an airplane
+ *  Prints displays elapsed time
+ *
+*/
+
 #include <iostream>
 #include <fstream>
 #include "StackAr.h"
@@ -8,7 +15,7 @@ using namespace std;
 
 enum AisleState { EMPTY, NEW, STOR_1, STOR_2, WAITING };
 /*  Definition of states:
- *
+
  *  EMPTY: aisle is clear
  *  NEW: new passenger in aisle, needs to store luggage
  *  STOR_1: First of two stages to store luggage
@@ -21,11 +28,16 @@ class Passenger {
   public:
     int number;
     char letter;
+
+    Passenger() {
+      number = 0;
+      letter = '\0';
+    }
+
     void remove() {
       number = 0;
       letter = 0;
-    };
-
+    }
 };
 
 class Row {
@@ -37,6 +49,21 @@ class Row {
     Passenger next;
     AisleState state;
     
+    Row() {
+      rowID = 0;
+      ABC.makeEmpty();
+      DEF.makeEmpty();
+      next.remove();
+      state = EMPTY;
+    }
+
+    void reset() {
+      rowID = 0;
+      ABC.makeEmpty();
+      DEF.makeEmpty();
+      next.remove();
+      state = EMPTY;
+    }
 };
 
 void parsePassengers(ifstream *fileInput, Queue<Passenger> *PBoarding) {
@@ -62,8 +89,6 @@ void parsePassengers(ifstream *fileInput, Queue<Passenger> *PBoarding) {
     PBoarding->enqueue(temp);
 
     fileInput->get();              // remove trailing space
-
-    //  cerr << temp.number << temp.letter << endl;
   }
 }
 
@@ -92,122 +117,326 @@ int main(int argc, char** argv)
   Row prevRow, curRow;
 
   ifstream fileInput(argv[1]);
-  if (!fileInput) {
-      cout << "Failed to open " << argv[1] << "." << endl;  
-      return -1;
-  }
 
+  // Part 1 --------------------------------------------------------------
+    // I. Initialization //
+      parsePassengers(&fileInput, &PBoarding);
+      clock = 0, seated = 0;
 
-  // I. Initialization //
-  parsePassengers(&fileInput, &PBoarding);
-  clock = 0, seated = 0;
+      for(int i = 48; i > 0; i--) {
+        curRow.rowID = i;
+        curRow.state = EMPTY;
+        RowList.enqueue(curRow);
+      }
 
-  for(int i = 48; i > 0; i--) {
-    curRow.rowID = i;
-    curRow.state = EMPTY;
-    RowList.enqueue(curRow);
-  }
+    // II. Put passengers where they belong. //
+    prevRow = RowList.dequeue();
+    while(seated < SEATS){
 
-  // II. Put passengers where they belong. //
-  prevRow = RowList.dequeue();
-  while(seated < SEATS){
+      for(int i = 48; i > 0; i--) {       // iterate back to front
+        curRow = prevRow;
+        prevRow = RowList.dequeue();
 
-    cerr << "ROW state aisle --------------------------------------seated---" << seated << " time: " << clock << endl;
+        switch(curRow.state) {
+          case EMPTY:
+                getNext(&curRow, &prevRow, &PBoarding);
+                break;
 
-    for(int i = 48; i > 0; i--) {       // iterate back to front
-      curRow = prevRow;
-      prevRow = RowList.dequeue();
+          case NEW:
+                if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
+                  curRow.state = STOR_1;
+                break;
 
-      switch(curRow.state) {
-        case EMPTY:
-              getNext(&curRow, &prevRow, &PBoarding);
-              break;
-
-        case NEW:
-              if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
-                curRow.state = STOR_1;
-              break;
-
-        case STOR_1:
-              curRow.state = STOR_2;
-              break;
-
-        case STOR_2:
-              if (curRow.next.letter <= 'C'){
-                if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
-                  curRow.ABC.push(curRow.next.letter);                              // they can just sit down
-                  seated++;
-                  curRow.next.remove();
-                  curRow.state = EMPTY;
-                  getNext(&curRow, &prevRow, &PBoarding);
-
-                }
-                else{ // otherwise we need to start making room for them
-                  curRow.out.push(curRow.ABC.topAndPop());                    
-                  curRow.state = WAITING;
-                }
-              }
-              
-              // passenger is D, E, or F
-              else if (curRow.next.letter >= 'D'){
-                if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
-                  curRow.DEF.push(curRow.next.letter);                              // they can just sit down
-                  seated++;
-                  curRow.next.remove();
-                  curRow.state = EMPTY;
-                  getNext(&curRow, &prevRow, &PBoarding);
-                }
-                else{ // otherwise we need to start making room for them
-                  curRow.out.push(curRow.DEF.topAndPop());                    
-                  curRow.state = WAITING;
-                }
-              }
-              break;
-
-        case WAITING:
-              if (curRow.next.letter <= 'C'){
-                if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){
-                  curRow.ABC.push(curRow.next.letter);   //sit
-                  curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
-                }
-                else{                         //can't sit, take another out
-                  curRow.out.push(curRow.ABC.topAndPop());
-                }
-              } else if (curRow.next.letter >= 'D') {
-                if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){
-                  curRow.DEF.push(curRow.next.letter);   //sit
-                  curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
-                }
-                else{                         //can't sit, take another out
-                  curRow.out.push(curRow.DEF.topAndPop());
-                }
-              }
-              
-              // everyone seated one side of the aisle
-              if (curRow.out.isEmpty() && (curRow.next.letter >= 'C' || curRow.next.letter <= 'D')) {
+          case STOR_1:
                 curRow.state = STOR_2;
-              }
+                break;
 
-              break;
-      } //switch
+          case STOR_2:
+                if (curRow.next.letter <= 'C'){
+                  if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                    curRow.ABC.push(curRow.next.letter);                              // they can just sit down
+                    seated++;
+                    curRow.next.remove();
+                    curRow.state = EMPTY;
+                    getNext(&curRow, &prevRow, &PBoarding);
 
-      cerr << curRow.rowID << " " << curRow.state << " " << curRow.next.number << curRow.next.letter << endl;
+                  }
+                  else{ // otherwise we need to start making room for them
+                    curRow.out.push(curRow.ABC.topAndPop());                    
+                    curRow.state = WAITING;
+                  }
+                }
+                
+                // passenger is D, E, or F
+                else if (curRow.next.letter >= 'D'){
+                  if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                    curRow.DEF.push(curRow.next.letter);                              // they can just sit down
+                    seated++;
+                    curRow.next.remove();
+                    curRow.state = EMPTY;
+                    getNext(&curRow, &prevRow, &PBoarding);
+                  }
+                  else{ // otherwise we need to start making room for them
+                    curRow.out.push(curRow.DEF.topAndPop());                    
+                    curRow.state = WAITING;
+                  }
+                }
+                break;
 
-      RowList.enqueue(curRow);
-   }//for
-   clock += 5;
-  } //while
-  cerr << "Back to front: " << clock << endl;
-  
-  
-  // III. Delete everything. //
-  PBoarding.makeEmpty();
-  RowList.makeEmpty();
+          case WAITING:
+                if (curRow.next.letter <= 'C'){
+                  if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){
+                    curRow.ABC.push(curRow.next.letter);   //sit
+                    curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                  }
+                  else{                         //can't sit, take another out
+                    curRow.out.push(curRow.ABC.topAndPop());
+                  }
+                } else if (curRow.next.letter >= 'D') {
+                  if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){
+                    curRow.DEF.push(curRow.next.letter);   //sit
+                    curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                  }
+                  else{                         //can't sit, take another out
+                    curRow.out.push(curRow.DEF.topAndPop());
+                  }
+                }
+                
+                // everyone seated one side of the aisle
+                if (curRow.out.isEmpty() && (curRow.next.letter >= 'C' || curRow.next.letter <= 'D')) {
+                  curRow.state = STOR_2;
+                }
 
+                break;
+        } //switch
 
+        RowList.enqueue(curRow);
+     }//iterate through rows
 
-  
+     clock += 5;
+    }//while seats not full
+
+    cout << "Back to front: " << clock << endl;
+
+    // III. Delete everything. //
+    PBoarding.makeEmpty();
+    RowList.makeEmpty();
+    prevRow.reset();
+    curRow.reset();
+
+  // Part 2 --------------------------------------------------------------
+
+    // I. Initialization //
+      parsePassengers(&fileInput, &PBoarding);
+      clock = 0, seated = 0;
+
+      for(int i = 48; i > 0; i--) {
+        curRow.rowID = i;
+        curRow.state = EMPTY;
+        RowList.enqueue(curRow);
+      }
+
+    // II. Put passengers where they belong. //
+      prevRow = RowList.dequeue();
+      while(seated < SEATS){
+
+        for(int i = 48; i > 0; i--) {       // iterate back to front
+          curRow = prevRow;
+          prevRow = RowList.dequeue();
+
+          switch(curRow.state) {
+            case EMPTY:
+                  getNext(&curRow, &prevRow, &PBoarding);
+                  break;
+
+            case NEW:
+                  if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
+                    curRow.state = STOR_1;
+                  break;
+
+            case STOR_1:
+                  curRow.state = STOR_2;
+                  break;
+
+            case STOR_2:
+                  if (curRow.next.letter <= 'C'){
+                    if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                      curRow.ABC.push(curRow.next.letter);                              // they can just sit down
+                      seated++;
+                      curRow.next.remove();
+                      curRow.state = EMPTY;
+                      getNext(&curRow, &prevRow, &PBoarding);
+
+                    }
+                    else{ // otherwise we need to start making room for them
+                      curRow.out.push(curRow.ABC.topAndPop());                    
+                      curRow.state = WAITING;
+                    }
+                  }
+                  
+                  // passenger is D, E, or F
+                  else if (curRow.next.letter >= 'D'){
+                    if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                      curRow.DEF.push(curRow.next.letter);                              // they can just sit down
+                      seated++;
+                      curRow.next.remove();
+                      curRow.state = EMPTY;
+                      getNext(&curRow, &prevRow, &PBoarding);
+                    }
+                    else{ // otherwise we need to start making room for them
+                      curRow.out.push(curRow.DEF.topAndPop());                    
+                      curRow.state = WAITING;
+                    }
+                  }
+                  break;
+
+            case WAITING:
+                  if (curRow.next.letter <= 'C'){
+                    if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){
+                      curRow.ABC.push(curRow.next.letter);   //sit
+                      curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                    }
+                    else{                         //can't sit, take another out
+                      curRow.out.push(curRow.ABC.topAndPop());
+                    }
+                  } else if (curRow.next.letter >= 'D') {
+                    if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){
+                      curRow.DEF.push(curRow.next.letter);   //sit
+                      curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                    }
+                    else{                         //can't sit, take another out
+                      curRow.out.push(curRow.DEF.topAndPop());
+                    }
+                  }
+                  
+                  // everyone seated one side of the aisle
+                  if (curRow.out.isEmpty() && (curRow.next.letter >= 'C' || curRow.next.letter <= 'D')) {
+                    curRow.state = STOR_2;
+                  }
+
+                  break;
+          } //switch
+
+          RowList.enqueue(curRow);
+       }//iterate through rows
+       clock += 5;
+
+      }//while seats not full
+      cout << "Random: " << clock << endl;
+      
+    // III. Delete everything. //
+      PBoarding.makeEmpty();
+      RowList.makeEmpty();
+      prevRow.reset();
+      curRow.reset();
+
+  // Part 3 --------------------------------------------------------------
+
+    // I. Initialization //
+      parsePassengers(&fileInput, &PBoarding);
+      clock = 0, seated = 0;
+
+      for(int i = 48; i > 0; i--) {
+        curRow.rowID = i;
+        curRow.state = EMPTY;
+        RowList.enqueue(curRow);
+      }
+
+    // II. Put passengers where they belong. //
+      prevRow = RowList.dequeue();
+      while(seated < SEATS){
+
+        for(int i = 48; i > 0; i--) {       // iterate back to front
+          curRow = prevRow;
+          prevRow = RowList.dequeue();
+
+          switch(curRow.state) {
+            case EMPTY:
+                  getNext(&curRow, &prevRow, &PBoarding);
+                  break;
+
+            case NEW:
+                  if(curRow.next.number == curRow.rowID)     // if passenger needs to sit here
+                    curRow.state = STOR_1;
+                  break;
+
+            case STOR_1:
+                  curRow.state = STOR_2;
+                  break;
+
+            case STOR_2:
+                  if (curRow.next.letter <= 'C'){
+                    if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                      curRow.ABC.push(curRow.next.letter);                              // they can just sit down
+                      seated++;
+                      curRow.next.remove();
+                      curRow.state = EMPTY;
+                      getNext(&curRow, &prevRow, &PBoarding);
+
+                    }
+                    else{ // otherwise we need to start making room for them
+                      curRow.out.push(curRow.ABC.topAndPop());                    
+                      curRow.state = WAITING;
+                    }
+                  }
+                  
+                  // passenger is D, E, or F
+                  else if (curRow.next.letter >= 'D'){
+                    if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){ // if row is empty or if passenger to be seated sits closer to aisle than those already seated
+                      curRow.DEF.push(curRow.next.letter);                              // they can just sit down
+                      seated++;
+                      curRow.next.remove();
+                      curRow.state = EMPTY;
+                      getNext(&curRow, &prevRow, &PBoarding);
+                    }
+                    else{ // otherwise we need to start making room for them
+                      curRow.out.push(curRow.DEF.topAndPop());                    
+                      curRow.state = WAITING;
+                    }
+                  }
+                  break;
+
+            case WAITING:
+                  if (curRow.next.letter <= 'C'){
+                    if (curRow.ABC.isEmpty() || curRow.next.letter > curRow.ABC.top()){
+                      curRow.ABC.push(curRow.next.letter);   //sit
+                      curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                    }
+                    else{                         //can't sit, take another out
+                      curRow.out.push(curRow.ABC.topAndPop());
+                    }
+                  } else if (curRow.next.letter >= 'D') {
+                    if (curRow.DEF.isEmpty() || curRow.next.letter < curRow.DEF.top()){
+                      curRow.DEF.push(curRow.next.letter);   //sit
+                      curRow.next.letter = curRow.out.topAndPop();   //put whoever was in out to go next
+                    }
+                    else{                         //can't sit, take another out
+                      curRow.out.push(curRow.DEF.topAndPop());
+                    }
+                  }
+                  
+                  // everyone seated one side of the aisle
+                  if (curRow.out.isEmpty() && (curRow.next.letter >= 'C' || curRow.next.letter <= 'D')) {
+                    curRow.state = STOR_2;
+                  }
+
+                  break;
+          }//switch
+
+          RowList.enqueue(curRow);
+       }//for each row
+
+       clock += 5;
+      }//while seats not full
+      cout << "Outside in: " << clock << endl;
+      
+    // III. Delete everything. //
+      PBoarding.makeEmpty();
+      RowList.makeEmpty();
+      prevRow.reset();
+      curRow.reset();
+
 
   return 0;
-}
 
+}
