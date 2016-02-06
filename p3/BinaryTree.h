@@ -1,47 +1,47 @@
-#include <iostream>
+#ifndef BinaryTreeH
+#define BinaryTreeH
 
+#include <iomanip>
+#include "BinaryHeap.h"
 using namespace std;
 
-template <class Object> 
-class BinaryTree {
-  public:
-    BinaryTree();
-    BinaryTree(BinaryTree* p, BinaryTree* l, BinaryTree* r);
-    void insert(Object);
-    void printTree();
+template <typename Object>
+class BinaryTree
+{
+public: 
+  Object data; 
+  int count;
+  BinaryTree<Object> *self;
+  BinaryTree<Object> *left;
+  BinaryTree<Object> *right;
 
-    BinaryTree *parent;
-    BinaryTree *left;
-    BinaryTree *right;
-    Object data;
+  void join(BinaryTree<Object> *l, BinaryTree<Object> *r) {
+    data = '\0';
+    count = l->count + r->count;
+    left = l;
+    right = r;
+  }
 
-};
-
-template <class Object>
-BinaryTree<Object>::BinaryTree() {
-      parent = NULL;      // NULL is root
-      left = NULL;
-      right = NULL;
-}
-
-template <class Object>
-BinaryTree<Object>::BinaryTree(BinaryTree* p, BinaryTree* l, BinaryTree* r) {
-      parent = p;
-      left = l;
-      right = r;
-
-      if(p->left == NULL) p->left = this;
-      else if (!p->right) p->right = this;
-    }
-
-template <class Object>
-void BinaryTree<Object>::insert(Object obj) {
+  void setData(Object ob, int i, BinaryTree<Object> *l, BinaryTree<Object> *r) {
+    self = this;
+    data = ob;
+    count = i;
+    left = l;
+    right = r;
+  }
   
-}
+  int getCount() const    {return count;}
+  
+  void printTree() {
+    // inorder L P R
+    left->printTree();
+    cout << data << " ";
+    right->printTree();
+  }
+ 
+  bool operator < (const BinaryTree &rhs) const  {return count < rhs.count; }
 
-template <class Object>
-void BinaryTree<Object>::printTree() {
-      cerr << "p == " << parent << endl;
-      cerr << "l == " << left << endl;
-      cerr << "r == " << right << endl;
-}
+
+}; //BinaryTree class
+
+#endif
