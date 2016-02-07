@@ -16,6 +16,7 @@ public:
   BinaryTree<Object> *right;
 
   void join(BinaryTree<Object> *l, BinaryTree<Object> *r) {
+    self = this;
     data = '\0';
     count = l->count + r->count;
     left = l;
@@ -32,14 +33,27 @@ public:
   
   int getCount() const    {return count;}
   
-  void printTree() {
+  void printTree(int *code, int index) {
     // inorder L P R
-    left->printTree();
-    cout << data << " ";
-    right->printTree();
+    if (left) {
+      code[index] = 0;
+      left->printTree(code, index+1);
+    }
+     
+    if (data != '\0') {             // don't print internal nodes
+      cout << data << setw(5) << count << " ";
+      for (int i = 0; i < index; i++)
+        cout << code[i];
+      cout << endl;
+    }
+
+    if (right) {
+      code[index] = 1;
+      right->printTree(code, index+1);
+    }
   }
- 
-  bool operator < (const BinaryTree &rhs) const  {return count < rhs.count; }
+  
+  bool operator < (const BinaryTree &rhs) const  {return count < rhs.count;}
 
 
 }; //BinaryTree class
