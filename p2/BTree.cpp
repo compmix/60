@@ -40,4 +40,12 @@ void BTree::print()
 
 void BTree::remove(int value)
 {  // To be written by students
+
+  BTreeNode *ptr = root->remove(value);
+
+  if(ptr) // root merged
+  {
+    //delete root;
+    root = ptr;
+  }
 } // BTree::remove()

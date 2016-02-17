@@ -1,4 +1,4 @@
-nclude <iostream>
+#include <iostream>
 #include <fstream>
 #include <cstring>
 #include <cstdlib>

@@ -122,10 +122,106 @@ void LeafNode::print(Queue <BTreeNode*> &queue)
 
 
 LeafNode* LeafNode::remove(int value)
-{   // To be written by students
-  return NULL;  // filler for stub
+{   // if merge, returns ptr to child to be deleted
+    // no merge, returns NULL
+
+  removeVal(value);
+  
+  if (count >= (leafSize + 1) / 2) // if no underflow, just return
+    return NULL;
+
+  if (leftSibling)
+  {
+    if (leftSibling->getCount() > (leafSize + 1) / 2) // if leftSibling can lend
+    {
+      borrow(leftSibling, leftSibling->getMaximum());
+      return NULL;
+    }     
+    else // merge with left
+      return mergeLeft();
+
+  }
+  else if (rightSibling) // left sibling non-existent
+  {
+    if (rightSibling->getCount() > (leafSize + 1) / 2)
+    {
+      borrow(rightSibling, rightSibling->getMinimum());
+      return NULL;
+    }          
+    else // merge with right
+      return mergeRight();
+  }
+
+  //return NULL;  // filler for stub
+  return this;
 }  // LeafNode::remove()
 
+
+LeafNode* LeafNode::mergeLeft() // new method
+{
+  for (int i = 0; i < count; i++)
+    leftSibling->insert(values[i]);           // insert values of calling leafNode into left sibling
+    
+  leftSibling->setRightSibling(rightSibling); // set leftSibling's right sibling to right sibling of calling node
+  
+  if (rightSibling)
+    rightSibling->setLeftSibling(leftSibling);  // set rightSibling's left sibling to left sibling of calling node
+  
+  return this;                                // return this child so it can be deleted (since it merged)
+}
+
+
+LeafNode* LeafNode::mergeRight()  // new method
+{
+  for (int i = 0; i < count; i++)
+    rightSibling->insert(values[i]);
+    
+  rightSibling->setLeftSibling(leftSibling);
+  
+  if (leftSibling)
+    leftSibling->setRightSibling(rightSibling);
+
+  return this;
+}
+
+
+void LeafNode::borrow(BTreeNode *sibling, int borrowVal) // new method
+{
+  sibling->remove(borrowVal);
+  insert(borrowVal);
+  
+  if (parent)
+  {
+    //parent->resetMinimum(this);
+    parent->resetMinimum(sibling);
+  } 
+}
+
+
+void LeafNode::removeVal(int value) // new method
+{
+  int index;
+  bool valFound = false;
+  for (index = 0; index < count; index++)
+  {
+    if (value == values[index])
+    {
+      valFound = true;
+      break;
+    }
+  }
+  
+  if (valFound == true)
+  {
+    for (int i = index; i < count - 1; i++)
+      values[i] = values[i + 1];
+    
+    count--;
+  }
+  
+  if (parent)
+    parent->resetMinimum(this);
+} // LeafNode::removeVal()
 
 
 LeafNode* LeafNode::split(int value, int last)

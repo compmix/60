@@ -19,7 +19,7 @@ enum AisleState { EMPTY, NEW, STOR_1, STOR_2, WAITING };
  *  EMPTY: aisle is clear
  *  NEW: new passenger in aisle, needs to store luggage
  *  STOR_1: First of two stages to store luggage
- *  STOR_2: Second of two stages to store luggage, also sits
+ *  STOR_2: Second of two stages to store luggage, also sits[][]
  *  WAITING: Passenger waiting for up to 2 other passengers to move out of their seats
  *
 */

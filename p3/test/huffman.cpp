@@ -1,45 +1,67 @@
 #include <iostream>
 #include <fstream>
-#include "BinaryHeap.h"
+#include <iomanip>
 #include "BinaryTree.h"
+#include "BinaryHeap.h"
+#define HEAP_SIZE 1000000
+using namespace std;
 
-int main(int argc, char** argv)
-{
-  BinaryHeap<BinaryTree<char> > heap; // not sure if this is correct
-  BinaryTree<char> t;
-  BinaryTree<char> left, right;
-  int count[256] = {0};
+void printHeap(BinaryHeap<BinaryTree<char> >);
+
+int main(int argc, char **argv) {
+  BinaryHeap<BinaryTree<char> > heap(HEAP_SIZE);
+  BinaryTree<char> *trie, *trie1, *trie2;
   char c;
-  ifstream inf(argv[1]);
-     
-  while (inf.get(c))  // iterate through file char by char
-    count[(int)c]++;  // use char's ascii value as index and keep track of count for that char
-                      // i.e. a has an ascii val of 97, so count[97] holds the number of times 'a' shows up in the file
-  
-  //build a table of letters/occurrences. keep sorted by occurrences
-  for (int i = 0; i < 256; i++)
-  {
-    if (count[i] != 0)
-    {
-      t.setData((char)i, count[i], NULL, NULL);
-      t.printTree(); // just to see if each t is being set correctly
-      heap.insert(t);
+
+  int ascii[256] = {0};
+
+  ifstream fileInput(argv[1]);
+  if(!fileInput) return -1;   // check if file legit
+
+  // count all characters into array
+  while(fileInput.get(c))   ascii[(int)c]++;
+
+
+  // iterate through ascii array to create trie leafs
+  for(int i = 0; i < 256; i++) {          //cerr << ascii[i] << " ";
+    // if char exists, add to heap
+    if(ascii[i] > 0) {
+        trie = new BinaryTree<char>;
+        trie->setData((char)i, ascii[i], NULL, NULL);
+        heap.insert(*trie);
     }
   }
 
-  // remove two min from the heap and merge them
-  // insert this merged object back into the heap
-  // do this until only one item left in heap (this is the final trie)
-  /*while(1)
-  {
-    heap.deleteMin(left_);
-    if (heap.isEmpty()) // if freq table becomes empty after one remove, break since all items have been merged into one tree
-      break;
-    heap.deleteMin(right_);
-    // merge the two min by creating a new tree whose left points to left_ and right points to right_. (having trouble implementing this)
-    heap.insert(t);
-  }
- */
+  printHeap(heap);
+
+  // get two mins, trie them, re-add to heap
+  while(!heap.isEmpty()) {
+    trie1 = heap.findMin().self;
+    heap.deleteMin();
+    cout << trie1 << "; " << trie1->data << endl;
+    if(heap.isEmpty()) break; // last trie is full trie
+
+    trie2 = heap.findMin().self;
+    heap.deleteMin();
+    cout << trie2 << ": " << trie2->data << endl;
+
+    trie = new BinaryTree<char>;
+    trie->join(trie1, trie2);
+    heap.insert(*trie);
+
+  } // while heap !empty
+
+  int code[50];
+  trie->printTree(code, 0);
 
   return 0;
+}
+
+
+void printHeap(BinaryHeap<BinaryTree<char> > heap) {
+  while(!heap.isEmpty()) {
+    cerr << heap.findMin().data;
+    heap.deleteMin();
+  }
+  cout << endl;
 }

@@ -15,12 +15,16 @@ public:
   void addToLeft(BTreeNode *last);
   void addToRight(BTreeNode *ptr, BTreeNode *last);
   void addToThis(BTreeNode *ptr, int pos); // pos is where the node should go
+  void borrowFromRight(); // new method
+  void borrowFromLeft(); // new method
   int getMaximum() const;
   int getMinimum() const;
   InternalNode* insert(int value); // returns pointer to new
-    // InternalNode if it splits else NULL
+                                  // InternalNode if it splits else NULL
   void insert(BTreeNode *oldRoot, BTreeNode *node2); // if root splits use this
   void insert(BTreeNode *newNode); // from a sibling
+  BTreeNode* mergeRight(); // new method
+  BTreeNode* mergeLeft(); // new method
   void print(Queue <BTreeNode*> &queue);
   BTreeNode* remove(int value);
   void resetMinimum(const BTreeNode* child);
