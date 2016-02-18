@@ -29,6 +29,7 @@ Defragmenter::Defragmenter(DiskDrive *diskDrive) {
 
 		directory[i].setFirstBlockID(2 + j);		// starts at 2
 
+
 		do {
 			j++;
 			FileBlockList.push(diskBlock);
@@ -45,7 +46,9 @@ Defragmenter::Defragmenter(DiskDrive *diskDrive) {
 
 	for(int i = 0; !FileBlockList.empty(); ) {
 		diskBlock = FileBlockList.front();
+		diskDrive->writeDiskBlock(diskBlock, 2 + i);
 		diskBlock->setNext(2 + i++);
+		delete diskBlock;
 		FileBlockList.pop();
 	}
 
