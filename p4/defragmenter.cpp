@@ -6,20 +6,31 @@
 
 using namespace std;
 
-Defragmenter::Defragmenter(DiskDrive *diskDrive) {
+DiskBlock* Defragmenter::findBlock(unsigned blockID) {
+	// provides a function to get assigned block from disk or hash table.
+
+	// 1. check the hash table, see if the original location was ever stored
+	swapTable->find(storedBlock);
+
+
+	return diskDrive->readDiskBlock(blockID);
+}
+
+Defragmenter::Defragmenter(DiskDrive *diskDr) {
+	diskDrive = diskDr;
 	DirectoryEntry *directory = diskDrive->directory;
 	DiskBlock *diskBlock, *diskBlockB;
-	QuadraticHashTable<DiskBlock*> *swapTable = new QuadraticHashTable<DiskBlock*> (diskBlock, 20000);
+	swapTable = new QuadraticHashTable<StoredBlock> (storedBlock, 20000);
 	
 
 	cout << "Capacity: " << diskDrive->getCapacity() << endl
 		 << "Number of Files: " << diskDrive->getNumFiles() << endl;
 
+
 	for(int entry = 0, block = 2, next = 0; entry < diskDrive->getNumFiles(); entry++) {		// for each file (directory entry)
 
 		next = directory[entry].getFirstBlockID();
-		diskBlock = diskDrive->readDiskBlock(next);		// grab first one so that we have the info
-
+		diskBlock = findBlock(next);		// grab first one so that we have the info
 		directory[entry].setFirstBlockID(entry + block);			// update directory first block ID 
 
 		cout << "File " << entry << " ID: " << directory[entry].getFileID()
@@ -30,12 +41,12 @@ Defragmenter::Defragmenter(DiskDrive *diskDrive) {
 
 		do {				// for each block in a file
 
-			// cout << "FileBlockNumber: " << diskBlock->getFileBlockNum() << endl;
+			cout << "FileBlockNumber: " << diskBlock->getFileBlockNum() << endl;
 
-			diskBlockB = diskDrive->readDiskBlock(block);			// read swap block to compare
+			diskBlockB = findBlock(block);			// read swap block to compare
 
 			if(diskBlock != diskBlockB)	{			// store somewhere (hash)
-				swapTable.insert(diskBlockB);
+				swapTable->insert(storedBlock);
 			}
 
 			diskDrive->writeDiskBlock(diskBlockB, next);
@@ -51,7 +62,7 @@ Defragmenter::Defragmenter(DiskDrive *diskDrive) {
 			delete diskBlock;
 			delete diskBlockB;
 
-			diskBlock = diskDrive->readDiskBlock(next);				// read in next file block
+			diskBlock = findBlock(next);				// read in next file block
 
 		} while (next != 1); // for each disk block in a file
 
