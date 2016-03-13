@@ -3,40 +3,77 @@
 #include "NetDriver.h"
 #include "maxfinder.h"
 #include "BinaryHeap.h"
+#include "QuadraticProbing.h"
+#include "LinkedList.h"
 
 using namespace std;
 
-MaxFinder::MaxFinder(const Computer *comps, int numComputers,
-  int numTerminals)
-{
-	source = new Computer;
-	terminals = new Computer[numTerminals];
-	others = new Computer[numComputers - numTerminals - 1];
+MaxFinder::MaxFinder(const Computer *comps, int numComputers, int numTerminals) {
+	source = new Vertex;
+	drain = new Vertex;
+	terminals = new Vertex[numTerminals];
+	others = new Vertex[numComputers - numTerminals - 1];
+	short v = 0;
+
+	vertices = new QuadraticHashTable<Vertex> (*source, numComputers * 2);
+
+	// 1. store computers address into int
+	// 2. store vertices into hash
+
+		//cout << numComputers << " " << numTerminals << endl;
+		for (int i = 0; i < numTerminals ; i++) {
+			terminals[i] = comps[i];
+			terminals[i].index = v++;
+			vertices->insert(terminals[i]);
+			cout << terminals[i].index << " " << terminals[i].intAddr << endl;
+		}
+
+		for (int i = 0; i < numComputers - numTerminals - 1; i++) {
+			others[i] = comps[numTerminals + i];
+			others[i].index = v++;
+			vertices->insert(others[i]);
+			cout << others[i].index << " " << others[i].intAddr << endl;
+		}
+
+		*drain = comps[numComputers-1];
+		drain->index = v++;
+		vertices->insert(*drain);
+		cout << drain->index << " " << drain->intAddr << endl;
+
+	
+	
 
 
-	cout << numComputers << " " << numTerminals << endl;
 
-	for (int i = 0; i < numTerminals ; i++) {
-		terminals[i] = comps[i];
-		cout << terminals[i].address << endl;
-	}
 
-	for (int i = 0; i < numComputers - numTerminals - 1; i++) {
-		others[i] = comps[numTerminals + i];
-		cout << others[i].address << endl;
-	}
 
-	*source = comps[numComputers-1];
 
-	cout << source->address << endl;
 
 
 } // MaxFinder()
 
+void MaxFinder::findMaxPath(Edge *graph) {
 
-int MaxFinder::calcMaxFlow(Edge *edges, int numEdges)
-{
-  return 0;  // bad result :(
+}
+
+int MaxFinder::calcMaxFlow(Edge *edges, int numEdges) {
+	// edges holds G
+	// create G_r = G and G_f = empty;
+
+	Edge *residual = new Edge[numEdges];
+
+	for(int i = 0; i < numEdges; i++) {
+		residual[i] = edges[i];
+	}
+
+	// find a MaxPath p from s to t in G_r
+
+
+	// first, need to create back edges
+
+
+
+	return 0;  // bad result :(
 } // calcMaxFlow()
 
 

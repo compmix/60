@@ -3,13 +3,19 @@
 #define maxfinderH
 #include "NetDriver.h"
 #include "BinaryHeap.h"
+#include "QuadraticProbing.h"
+#include "LinkedList.h"
+
 
 class MaxFinder
 {
 public:
-	Computer *source, drain, *terminals, *others;
+	Vertex *source, *drain, *terminals, *others;
+
+	QuadraticHashTable<Vertex> *vertices;
 
 	MaxFinder(const Computer *comps, int numComputers, int numTerminals);
+	void findMaxPath(Edge *graph);
 	int calcMaxFlow(Edge *edges, int numEdges);
 }; // class MaxFinder
 
