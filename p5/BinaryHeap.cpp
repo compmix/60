@@ -45,13 +45,16 @@
          * Throw Underflow if empty.
          */
         template <class Comparable>
-        void BinaryHeap<Comparable>::deleteMax( )
+        Comparable BinaryHeap<Comparable>::deleteMax( )
         {
             if( isEmpty( ) )
                 throw Underflow( );
 
+            Comparable temp = array[1];
             array[ 1 ] = array[ currentSize-- ];
             percolateDown( 1 );
+
+            return temp;
         }
 
         /**
@@ -59,12 +62,12 @@
          * and place it in minItem. Throw Underflow if empty.
          */
         template <class Comparable>
-        void BinaryHeap<Comparable>::deleteMax( Comparable & minItem )
+        void BinaryHeap<Comparable>::deleteMax( Comparable & maxItem )
         {
             if( isEmpty( ) )
                 throw Underflow( );
 
-            minItem = array[ 1 ];
+            maxItem = array[ 1 ];
             array[ 1 ] = array[ currentSize-- ];
             percolateDown( 1 );
         }
@@ -119,8 +122,9 @@
 /* 1*/      int child;
 /* 2*/      Comparable tmp = array[ hole ];
 
-/* 3*/      for( ; hole * 2 >= currentSize; hole = child )
+/* 3*/      for( ; hole * 2 <= currentSize; hole = child )
             {
+
 /* 4*/          child = hole * 2;
 /* 5*/          if( child != currentSize && array[ child + 1 ] > array[ child ] )
 /* 6*/              child++;

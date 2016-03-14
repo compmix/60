@@ -11,8 +11,8 @@
         //
         // ******************PUBLIC OPERATIONS*********************
         // void insert( x )       --> Insert x
-        // deleteMin( minItem )   --> Remove (and optionally return) smallest item
-        // Comparable findMin( )  --> Return smallest item
+        // deleteMax( maxItem )   --> Remove (and optionally return) largest item
+        // Comparable findMax( )  --> Return largest item
         // bool isEmpty( )        --> Return true if empty; else false
         // bool isFull( )         --> Return true if full; else false
         // void makeEmpty( )      --> Remove all items
@@ -30,8 +30,8 @@
             const Comparable & findMax( ) const;
 
             void insert( const Comparable & x );
-            void deleteMax( );
-            void deleteMax( Comparable & minItem );
+            Comparable deleteMax( );
+            void deleteMax( Comparable & maxItem );
             void makeEmpty( );
 
           private:

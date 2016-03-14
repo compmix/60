@@ -85,17 +85,21 @@ void MaxFinder::findMaxPath(Vector<Vertex> graph) {
 	b. dv_w = max(dv_w, dv_v + c_vw)
 */
 	// 0. table of vertices with dv, pv
+	bool *kn = new bool[graph.size()];
 	int *dv = new int[graph.size()];
 	int *pv = new int[graph.size()];
 	BinaryHeap<Edge2> vertexHeap;
 
-	// 1. v = findMax && v is unknown
+	memset(kn, 0, graph.size() * sizeof(bool));
+	memset(dv, 0, graph.size() * sizeof(int));
+	memset(pv, 0, graph.size() * sizeof(int));
 
-	// start from the source, push vertices into heap, update tables
-	for(int i = 0; i < source.edges.size() ; ++i) {
+
+	// 1. start from the source, push vertices into heap, update tables
+	for(int i = 0; i < source.edges.size(); ++i) {
 		vertexHeap.insert(source.edges[i]);
-		dv[source.edges[i].dest] = source.edges[i].capacity;
-		pv[source.edges[i].dest] = i;
+		dv[source.edges[i].dest] = 0;
+		pv[source.edges[i].dest] = -1;
 		cout << "dv: " << dv[i] << " pv: " << pv[i] << endl;
 	}
 
@@ -103,8 +107,34 @@ void MaxFinder::findMaxPath(Vector<Vertex> graph) {
 		//cout << "dv: " << dv[i] << " pv: " << pv[i] << endl;
 	}
 
-	// take biggest vertex, mark as known
 
+	while(!vertexHeap.isEmpty()) {
+	
+	Edge2 tmpEdge = vertexHeap.deleteMax();
+
+	if(kn[tmpEdge.dest] == 1) continue;
+
+		// 2. take biggest vertex, mark as known
+		Vertex currentVertex = graph[tmpEdge.dest];
+		kn[currentVertex.index] = 1;
+		cout << tmpEdge.dest << " is now known. Checking edges" << endl;
+
+		// 3. update all adjacent vertices of v
+		for(int i = 0; i < currentVertex.edges.size() ; ++i) {
+			vertexHeap.insert(currentVertex.edges[i]);
+
+			// update vertices if dv is bigger than current one
+			cout << dv[currentVertex.edges[i].dest] << endl;
+			if(dv[currentVertex.edges[i].dest] < currentVertex.edges[i].capacity + dv[currentVertex.index]) {
+				dv[currentVertex.edges[i].dest] = currentVertex.edges[i].capacity + dv[currentVertex.index];
+				pv[currentVertex.edges[i].dest] = currentVertex.index;
+			}
+			cout << "dv: " << dv[currentVertex.edges[i].dest] << " pv: " << pv[currentVertex.edges[i].dest] << endl;
+		}
+
+		// 4. repeat until all true
+
+	} // while stuff in heap
 
 }
 
@@ -120,20 +150,27 @@ int MaxFinder::calcMaxFlow(Edge *edges, int numEdges) {
 
 		src = vertices->find(src);
 		dest = vertices->find(dest);
-
+		vertices->remove(src);
+		vertices->remove(dest);
 		
 		// store forward edges
 		tmpEdge.capacity = edges[i].capacity;
 		tmpEdge.dest = dest.index;
 		tmpEdge.destAddr = dest.intAddr;
 		src.edges.insert(tmpEdge);
+		original[src.index] = src;
 
 		// store back edges
 		tmpEdge.capacity = 0;
 		tmpEdge.dest = src.index;
 		tmpEdge.destAddr = src.intAddr;
 		dest.edges.insert(tmpEdge);
+		original[dest.index] = src;
 
+		// update hash table
+		vertices->insert(src);
+		vertices->insert(dest);
+		
 		cout << "src index: " << src.index << " -> " << dest.index << endl;
 		//cout << dest.edges[src.edges.end()].dest << " -> " << src.edges[src.edges.end()].dest << endl; 
 	}
