@@ -5,12 +5,13 @@
 #include "BinaryHeap.h"
 #include "QuadraticProbing.h"
 #include "LinkedList.h"
+#include "vector.h"
 
 using namespace std;
 
+
 MaxFinder::MaxFinder(const Computer *comps, int numComputers, int numTerminals) {
 	source = new Vertex;
-	drain = new Vertex;
 	terminals = new Vertex[numTerminals];
 	others = new Vertex[numComputers - numTerminals - 1];
 	short v = 0;
@@ -20,43 +21,81 @@ MaxFinder::MaxFinder(const Computer *comps, int numComputers, int numTerminals) 
 	// 1. store computers address into int
 	// 2. store vertices into hash
 
-		//cout << numComputers << " " << numTerminals << endl;
+		cout << numComputers << " " << numTerminals << endl;
 		for (int i = 0; i < numTerminals ; i++) {
 			terminals[i] = comps[i];
 			terminals[i].index = v++;
+			cout << "Inserting: " << terminals[i].index << " " << terminals[i].intAddr << " " << comps[i].address << endl;
 			vertices->insert(terminals[i]);
-			cout << terminals[i].index << " " << terminals[i].intAddr << endl;
+			
 		}
 
 		for (int i = 0; i < numComputers - numTerminals - 1; i++) {
 			others[i] = comps[numTerminals + i];
 			others[i].index = v++;
+			cout << "Inserting: " << others[i].index << " " << others[i].intAddr << " " << comps[numTerminals + i].address << endl;
 			vertices->insert(others[i]);
-			cout << others[i].index << " " << others[i].intAddr << endl;
+			
 		}
 
-		*drain = comps[numComputers-1];
-		drain->index = v++;
-		vertices->insert(*drain);
-		cout << drain->index << " " << drain->intAddr << endl;
+		drain = comps[numComputers-1];
+		drain.index = v++;
+		cout << "Inserting: " << drain.index << " " << drain.intAddr << " " << comps[numComputers - 1].address << endl;
+		vertices->insert(drain);
+		
 
-	
-	
-
-
-
-
-
-
-
-
+	// use the index to detect similar ip address, eg 11.1.1.1 and 1.11.1.1 both have intAddr 11111
 } // MaxFinder()
+
+long MaxFinder::char2LongIP(char *address) {
+	long intAddr = 0;
+
+	for (int i = 0; address[i] != '\0'; ++i) {
+                    if(address[i] == '.') continue;
+
+                    intAddr = intAddr*10 + address[i] - '0';
+    }
+
+    return intAddr;
+}
 
 void MaxFinder::findMaxPath(Edge *graph) {
 
 }
 
 int MaxFinder::calcMaxFlow(Edge *edges, int numEdges) {
+
+	// 1. store edge information within vertices
+	for(int i = 0; i < numEdges; ++i) {
+		Vertex src, dest;
+		Edge2 tmpEdge;
+
+		//cout << edges[i].src << " -> " << edges[i].dest << endl;
+		src.intAddr = char2LongIP(edges[i].src);
+		dest.intAddr = char2LongIP(edges[i].dest);
+
+		src = vertices->find(src); 
+		dest = vertices->find(dest);
+
+		cout << "src index: " << src.index << " -> " << dest.index << endl;
+
+		tmpEdge.capacity = edges[i].capacity;
+		tmpEdge.dest = char2LongIP(edges[i].dest);
+
+		src.edges.insert(tmpEdge);
+
+		tmpEdge.capacity = 0;
+		tmpEdge.dest = char2LongIP(edges[i].src);
+		dest.edges.insert(tmpEdge);
+
+		//src.edges.insert(&edges[i], src.edges.first());
+		cout << dest.edges[src.edges.size() - 1].dest << " -> " << src.edges[src.edges.size() - 1].dest << endl;
+
+	}
+
+
+
+
 	// edges holds G
 	// create G_r = G and G_f = empty;
 

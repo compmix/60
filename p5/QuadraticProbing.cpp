@@ -59,6 +59,7 @@
             int currentPos = findPos( x );
             if( isActive( currentPos ) )
                 return;
+            //cout << "Inserted to: " << currentPos << endl;
             array[ currentPos ] = HashEntry( x, ACTIVE );
 
                 // Rehash; see Section 5.5

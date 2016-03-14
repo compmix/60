@@ -20,37 +20,32 @@
         //                        --> Static method to hash strings
 
         
+        class Edge2 {
+        public:
+            long dest;
+            short capacity;
+        };
+
         class Vertex {
         public:
             int index;
             long intAddr;
 
-            List<Edge*> edges; 
+            Vertex(): index(-1), intAddr(-1) {};
 
+            Vector<Edge2> edges;
 
             void operator= (Computer comp) {
                 intAddr = 0;
-
                 for (int i = 0; comp.address[i] != '\0'; ++i) {
                     if(comp.address[i] == '.') continue;
-
                     intAddr = intAddr*10 + comp.address[i] - '0';
-
                 }
-
-                /*
-                tok = strtok (comp.address, ".");
-                while (tok != NULL) {
-                    for (int i = 0; tok[i] != '\0'; ++i)
-                        intAddr = intAddr*10 + tok[i] - '0';
-
-                    tok = strtok (NULL, ".");
-                }*/
-
-
             }
 
-            bool operator!= (const Vertex &rhs) const {return index != rhs.intAddr;}
+            bool operator!= (const Vertex &rhs) const {
+                return intAddr != rhs.intAddr;
+            }
 
         }; // class Vertex
 
