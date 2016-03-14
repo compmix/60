@@ -10,44 +10,59 @@
 using namespace std;
 
 
-MaxFinder::MaxFinder(const Computer *comps, int numComputers, int numTerminals) {
-	source = new Vertex;
+MaxFinder::MaxFinder(const Computer *comps, int numComps, int numTerms) {
+	numComputers = numComps;
+	numTerminals = numTerms;
 	terminals = new Vertex[numTerminals];
 	others = new Vertex[numComputers - numTerminals - 1];
 	short v = 0;
 
-	vertices = new QuadraticHashTable<Vertex> (*source, numComputers * 2);
+	vertices = new QuadraticHashTable<Vertex> (source, numComputers * 2);
 
 	// 1. store computers address into int
 	// 2. store vertices into hash
 
+		// store Terminals
 		cout << numComputers << " " << numTerminals << endl;
-		for (int i = 0; i < numTerminals ; i++) {
+		for (int i = 0; i < numTerminals ; ++i) {
 			terminals[i] = comps[i];
 			terminals[i].index = v++;
 			cout << "Inserting: " << terminals[i].index << " " << terminals[i].intAddr << " " << comps[i].address << endl;
+			original.insert(terminals[i]);
 			vertices->insert(terminals[i]);
 			
+
+			// create source to terminals edges
+			Edge2 tmpEdge;
+			tmpEdge.capacity = -1;
+			tmpEdge.dest = terminals[i].index;
+			tmpEdge.destAddr = char2LongIP(comps[i].address);
+			source.edges.insert(tmpEdge);
+
 		}
 
-		for (int i = 0; i < numComputers - numTerminals - 1; i++) {
+		// store normal computers
+		for (int i = 0; i < numComputers - numTerminals - 1; ++i) {
 			others[i] = comps[numTerminals + i];
 			others[i].index = v++;
 			cout << "Inserting: " << others[i].index << " " << others[i].intAddr << " " << comps[numTerminals + i].address << endl;
+			original.insert(others[i]);
 			vertices->insert(others[i]);
-			
+
 		}
 
+		// store drain computer
 		drain = comps[numComputers-1];
 		drain.index = v++;
 		cout << "Inserting: " << drain.index << " " << drain.intAddr << " " << comps[numComputers - 1].address << endl;
+		original.insert(drain);
 		vertices->insert(drain);
-		
+
 
 	// use the index to detect similar ip address, eg 11.1.1.1 and 1.11.1.1 both have intAddr 11111
 } // MaxFinder()
 
-long MaxFinder::char2LongIP(char *address) {
+long MaxFinder::char2LongIP(char const *address) {
 	long intAddr = 0;
 
 	for (int i = 0; address[i] != '\0'; ++i) {
@@ -57,58 +72,80 @@ long MaxFinder::char2LongIP(char *address) {
     }
 
     return intAddr;
-}
+} // char2LongIP
 
-void MaxFinder::findMaxPath(Edge *graph) {
+void MaxFinder::findMaxPath(Vector<Vertex> graph) {
+/*
+// Dijkstra's Algorithm (Max)
+0. table of vertices with dv, pv
+1. v = findMax && v is unknown
+2. mark v as known
+3. update all adjacent vertices of v
+	a. dv_w, pv_w
+	b. dv_w = max(dv_w, dv_v + c_vw)
+*/
+	// 0. table of vertices with dv, pv
+	int *dv = new int[graph.size()];
+	int *pv = new int[graph.size()];
+	BinaryHeap<Edge2> vertexHeap;
+
+	// 1. v = findMax && v is unknown
+
+	// start from the source, push vertices into heap, update tables
+	for(int i = 0; i < source.edges.size() ; ++i) {
+		vertexHeap.insert(source.edges[i]);
+		dv[source.edges[i].dest] = source.edges[i].capacity;
+		pv[source.edges[i].dest] = i;
+		cout << "dv: " << dv[i] << " pv: " << pv[i] << endl;
+	}
+
+	for(int i = 0; i < numComputers; ++i) {
+		//cout << "dv: " << dv[i] << " pv: " << pv[i] << endl;
+	}
+
+	// take biggest vertex, mark as known
+
 
 }
 
 int MaxFinder::calcMaxFlow(Edge *edges, int numEdges) {
 
-	// 1. store edge information within vertices
+	// 0. store edge information within vertices
 	for(int i = 0; i < numEdges; ++i) {
 		Vertex src, dest;
 		Edge2 tmpEdge;
 
-		//cout << edges[i].src << " -> " << edges[i].dest << endl;
 		src.intAddr = char2LongIP(edges[i].src);
 		dest.intAddr = char2LongIP(edges[i].dest);
 
-		src = vertices->find(src); 
+		src = vertices->find(src);
 		dest = vertices->find(dest);
 
-		cout << "src index: " << src.index << " -> " << dest.index << endl;
-
+		
+		// store forward edges
 		tmpEdge.capacity = edges[i].capacity;
-		tmpEdge.dest = char2LongIP(edges[i].dest);
-
+		tmpEdge.dest = dest.index;
+		tmpEdge.destAddr = dest.intAddr;
 		src.edges.insert(tmpEdge);
 
+		// store back edges
 		tmpEdge.capacity = 0;
-		tmpEdge.dest = char2LongIP(edges[i].src);
+		tmpEdge.dest = src.index;
+		tmpEdge.destAddr = src.intAddr;
 		dest.edges.insert(tmpEdge);
 
-		//src.edges.insert(&edges[i], src.edges.first());
-		cout << dest.edges[src.edges.size() - 1].dest << " -> " << src.edges[src.edges.size() - 1].dest << endl;
-
+		cout << "src index: " << src.index << " -> " << dest.index << endl;
+		//cout << dest.edges[src.edges.end()].dest << " -> " << src.edges[src.edges.end()].dest << endl; 
 	}
 
 
+	// Ford-Fulkerson
+	residual = original; 		// set G_r = G
 
-
-	// edges holds G
-	// create G_r = G and G_f = empty;
-
-	Edge *residual = new Edge[numEdges];
-
-	for(int i = 0; i < numEdges; i++) {
-		residual[i] = edges[i];
-	}
 
 	// find a MaxPath p from s to t in G_r
+	findMaxPath(residual);
 
-
-	// first, need to create back edges
 
 
 

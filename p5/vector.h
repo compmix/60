@@ -15,7 +15,7 @@ template <class Object>
 class vector
 {
   public:
-    explicit vector( int theSize = 1 ) : maxCapacity(theSize), currentSize( theSize ) { objects = new Object[ currentSize ]; }
+    explicit vector( int theSize = 1 ) : maxCapacity(theSize), currentSize( theSize -1  ) { objects = new Object[ maxCapacity ]; }
     vector( const vector & rhs ) : objects( NULL )  { operator=( rhs ); }
     ~vector( )          { delete [ ] objects; }
 
@@ -45,7 +45,7 @@ class vector
     void insert(Object ob) {
       if(currentSize == maxCapacity) resize(maxCapacity * 2);
 
-      objects[currentSize - 1] = ob;
+      objects[currentSize++] = ob;
 
     }
 
@@ -57,6 +57,7 @@ class vector
     
     int maxCapacity;
     int currentSize;
+    
     Object * objects;
 };
 

@@ -22,13 +22,18 @@
         
         class Edge2 {
         public:
-            long dest;
             short capacity;
+            short dest;
+            long destAddr;
+
+            bool operator> (const Edge2 &rhs) const {
+                return capacity != rhs.capacity;
+            }
         };
 
         class Vertex {
         public:
-            int index;
+            short index;
             long intAddr;
 
             Vertex(): index(-1), intAddr(-1) {};

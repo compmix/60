@@ -11,13 +11,16 @@
 class MaxFinder
 {
 public:
-	Vertex *source, drain, *terminals, *others;
+	int numComputers, numTerminals;
+
+	Vector<Vertex> original, flow, residual;
+	Vertex source, drain, *terminals, *others;
 
 	QuadraticHashTable<Vertex> *vertices;
 
 	MaxFinder(const Computer *comps, int numComputers, int numTerminals);
-	long char2LongIP(char *address);
-	void findMaxPath(Edge *graph);
+	long char2LongIP(char const *address);
+	void findMaxPath(Vector<Vertex> graph);
 	int calcMaxFlow(Edge *edges, int numEdges);
 }; // class MaxFinder
 
